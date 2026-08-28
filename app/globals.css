@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f0f7f6;
+  --color-brand-100: #d9ece8;
+  --color-brand-200: #b3d9d1;
+  --color-brand-300: #82beb2;
+  --color-brand-400: #529e91;
+  --color-brand-500: #337d71;
+  --color-brand-600: #26645b;
+  --color-brand-700: #21514a;
+  --color-brand-800: #1e423d;
+  --color-brand-900: #1b3733;
+  --color-brand-950: #0c1e1b;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: #f6f7f8;
+  color: #111827;
+}
+
+.badge-green {
+  @apply inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800;
+}
+.badge-orange {
+  @apply inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800;
+}
+.badge-red {
+  @apply inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+}
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+}
+.btn-danger {
+  @apply inline-flex items-center justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 transition-colors;
+}
+.input {
+  @apply block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
+}
+.card {
+  @apply rounded-lg border border-gray-200 bg-white shadow-sm;
+}
+.label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
