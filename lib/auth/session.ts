@@ -59,3 +59,40 @@ export function requireRole(session: CurrentSession, allowed: UserRole[]) {
     throw new Error("FORBIDDEN: insufficient role");
   }
 }
+
+/**
+ * Same lookup as requireSession() but returns null instead of redirecting,
+ * for use in API route handlers where a redirect makes no sense — callers
+ * should return a 401 JSON response themselves.
+ */
+export async function getApiSession(): Promise<CurrentSession | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data: profileData } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .maybeSingle();
+  const profile = profileData as Profile | null;
+  if (!profile) return null;
+
+  const { data: companyData } = await supabase
+    .from("companies")
+    .select("*")
+    .eq("id", profile.company_id)
+    .maybeSingle();
+  const company = companyData as Company | null;
+  if (!company) return null;
+
+  return {
+    userId: user.id,
+    email: user.email ?? null,
+    profile,
+    company,
+  };
+}

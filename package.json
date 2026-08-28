@@ -24,7 +24,6 @@
     "decimal.js": "10.6.0",
     "@react-pdf/renderer": "4.9.0",
     "xlsx": "0.18.5",
-    "papaparse": "5.7.0",
     "clsx": "2.1.1"
   },
   "devDependencies": {
@@ -32,7 +31,6 @@
     "@types/node": "22.15.0",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.1",
-    "@types/papaparse": "5.3.16",
     "eslint": "9.24.0",
     "eslint-config-next": "16.3.3",
     "tailwindcss": "4.3.3",
