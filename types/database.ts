@@ -122,7 +122,7 @@ export interface RfqItem {
   company_id: string;
   rfq_id: string;
   raw_description: string;
-  requested_quantity: number;
+  requested_quantity: number | null;
   requested_unit: string | null;
   matched_product_id: string | null;
   match_confidence: number | null;

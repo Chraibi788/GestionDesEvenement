@@ -193,7 +193,10 @@ create table rfq_items (
   company_id uuid not null references companies(id) on delete cascade,
   rfq_id uuid not null references rfqs(id) on delete cascade,
   raw_description text not null,
-  requested_quantity numeric(14,3) not null,
+  -- Nullable on purpose: the AI extraction must never invent a quantity it
+  -- did not find in the customer's message (see lib/ai/extract-rfq.ts). A
+  -- null here means the salesperson must confirm the quantity manually.
+  requested_quantity numeric(14,3),
   requested_unit text,
   matched_product_id uuid references products(id) on delete set null,
   match_confidence numeric(5,2),
