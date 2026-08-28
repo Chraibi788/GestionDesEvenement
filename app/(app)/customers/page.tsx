@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
+import { sanitizeIlikeTerm } from "@/lib/supabase/search";
 import type { Customer } from "@/types/database";
 
 export default async function CustomersPage({
@@ -13,8 +14,9 @@ export default async function CustomersPage({
   const supabase = await createClient();
 
   let query = supabase.from("customers").select("*").order("name", { ascending: true });
-  if (q) {
-    query = query.or(`name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%,customer_code.ilike.%${q}%`);
+  const searchTerm = q ? sanitizeIlikeTerm(q) : "";
+  if (searchTerm) {
+    query = query.or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,customer_code.ilike.%${searchTerm}%`);
   }
   const { data } = await query;
   const customers = (data ?? []) as Customer[];

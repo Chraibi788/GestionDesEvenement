@@ -8,6 +8,7 @@ import { requireSession, requireRole } from "@/lib/auth/session";
 import { callRpc } from "@/lib/supabase/rpc";
 import { calculateQuotation, type QuotationLineInput } from "@/lib/pricing/calculate-quotation";
 import { evaluateApprovalRequirement } from "@/lib/pricing/margin";
+import { assertAllItemsMatched } from "@/lib/quotation/guards";
 import { writeAuditLog, AUDIT_ACTIONS } from "@/lib/audit/log";
 import type { Customer, CustomerProductPrice, Product, RfqItem } from "@/types/database";
 
@@ -61,9 +62,9 @@ export async function generateQuotationAction(
 
   // Never trust the client for what "matched" means — re-check server-side
   // that every line being quoted actually has a confirmed product match.
-  const unmatched = rfqItems.filter((i) => i.status !== "matched" || !i.matched_product_id);
-  if (rfqItems.length === 0 || unmatched.length > 0) {
-    return { error: "Impossible de générer le devis: certains articles ne sont pas associés à un produit." };
+  const guard = assertAllItemsMatched(rfqItems);
+  if (!guard.ok) {
+    return { error: guard.reason };
   }
 
   const productIds = rfqItems.map((i) => i.matched_product_id!) as string[];

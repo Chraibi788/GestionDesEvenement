@@ -52,19 +52,25 @@ function tokenize(text: string): Set<string> {
   return new Set(normalize(text).split(" ").filter((t) => t.length > 1));
 }
 
-// Jaccard similarity over normalized word tokens — a simple, dependency-free
-// approximation of full-text search, good enough to build a short candidate
-// list from an SME's product catalogue (hundreds to a few thousand SKUs).
-function textSimilarity(a: string, b: string): number {
-  const setA = tokenize(a);
-  const setB = tokenize(b);
-  if (setA.size === 0 || setB.size === 0) return 0;
+// Query-coverage similarity: what fraction of the customer's words (query)
+// are found somewhere in the candidate product's combined text. A plain
+// Jaccard/union score unfairly penalizes a good match when the product
+// record carries a lot of extra descriptive metadata (brand, category,
+// several technical keywords) that the customer never mentioned — coverage
+// only asks "did we find everything the customer said", which is what
+// actually matters for this pre-filter. This is a simple, dependency-free
+// approximation of full-text search, good enough to build a short
+// candidate list from an SME's product catalogue (hundreds to a few
+// thousand SKUs) before handing it to the AI-assisted ranking stage.
+function textSimilarity(query: string, candidateText: string): number {
+  const queryTokens = tokenize(query);
+  const candidateTokens = tokenize(candidateText);
+  if (queryTokens.size === 0 || candidateTokens.size === 0) return 0;
   let intersection = 0;
-  for (const token of setA) {
-    if (setB.has(token)) intersection += 1;
+  for (const token of queryTokens) {
+    if (candidateTokens.has(token)) intersection += 1;
   }
-  const union = setA.size + setB.size - intersection;
-  return union === 0 ? 0 : intersection / union;
+  return intersection / queryTokens.size;
 }
 
 function productSearchText(product: MatchableProduct): string {

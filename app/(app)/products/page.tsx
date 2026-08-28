@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
+import { sanitizeIlikeTerm } from "@/lib/supabase/search";
 import type { Product } from "@/types/database";
 
 export default async function ProductsPage({
@@ -13,8 +14,9 @@ export default async function ProductsPage({
   const supabase = await createClient();
 
   let query = supabase.from("products").select("*").order("name", { ascending: true });
-  if (q) {
-    query = query.or(`name.ilike.%${q}%,sku.ilike.%${q}%,brand.ilike.%${q}%`);
+  const searchTerm = q ? sanitizeIlikeTerm(q) : "";
+  if (searchTerm) {
+    query = query.or(`name.ilike.%${searchTerm}%,sku.ilike.%${searchTerm}%,brand.ilike.%${searchTerm}%`);
   }
   if (brand) query = query.eq("brand", brand);
   if (category) query = query.eq("category", category);
