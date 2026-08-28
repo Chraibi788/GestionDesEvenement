@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { href: "/customers", label: "Clients" },
   { href: "/products", label: "Produits" },
   { href: "/rfqs", label: "Demandes de prix" },
+  { href: "/quotations", label: "Devis" },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

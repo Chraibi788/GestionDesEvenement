@@ -254,3 +254,64 @@ export async function rejectQuotationAction(quotationId: string): Promise<Quotat
   revalidatePath(`/quotations/${quotationId}`);
   return {};
 }
+
+export interface EditQuotationDetailsState {
+  error?: string;
+}
+
+const EDITABLE_STATUSES = ["draft", "pending_approval"];
+
+/**
+ * Lets a salesperson/manager edit the non-financial terms of a quotation
+ * (validity date, delivery/payment terms, notes). Prices, quantities, and
+ * totals are never editable here — regenerating the RFQ is the only path
+ * to changing commercial figures, keeping the calculation always
+ * database-derived and auditable.
+ */
+export async function updateQuotationDetailsAction(
+  quotationId: string,
+  _prevState: EditQuotationDetailsState,
+  formData: FormData
+): Promise<EditQuotationDetailsState> {
+  const session = await requireSession();
+  const supabase = await createClient();
+
+  const { data: quotationRow } = await supabase
+    .from("quotations")
+    .select("id, status")
+    .eq("id", quotationId)
+    .eq("company_id", session.company.id)
+    .maybeSingle();
+  if (!quotationRow) {
+    return { error: "Devis introuvable." };
+  }
+  if (!EDITABLE_STATUSES.includes((quotationRow as { status: string }).status)) {
+    return { error: "Ce devis ne peut plus être modifié dans son statut actuel." };
+  }
+
+  const validUntil = String(formData.get("valid_until") || "").trim() || null;
+  const deliveryTerms = String(formData.get("delivery_terms") || "").trim() || null;
+  const paymentTerms = String(formData.get("payment_terms") || "").trim() || null;
+  const notes = String(formData.get("notes") || "").trim() || null;
+
+  const { error } = await supabase
+    .from("quotations")
+    .update({ valid_until: validUntil, delivery_terms: deliveryTerms, payment_terms: paymentTerms, notes })
+    .eq("id", quotationId)
+    .eq("company_id", session.company.id);
+
+  if (error) {
+    return { error: "Impossible d'enregistrer les modifications." };
+  }
+
+  await writeAuditLog({
+    companyId: session.company.id,
+    userId: session.userId,
+    action: AUDIT_ACTIONS.QUOTATION_EDITED,
+    entityType: "quotation",
+    entityId: quotationId,
+  });
+
+  revalidatePath(`/quotations/${quotationId}`);
+  return {};
+}
