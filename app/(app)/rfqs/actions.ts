@@ -70,7 +70,10 @@ export async function createAndAnalyzeRfqAction(
   if (!extraction.success) {
     await supabase
       .from("rfqs")
-      .update({ status: "needs_review", extracted_data: { error: extraction.error } })
+      .update({
+        status: "needs_review",
+        extracted_data: { error: extraction.error, raw_response: extraction.rawResponse ?? null },
+      })
       .eq("id", rfqId);
 
     await writeAuditLog({
@@ -96,7 +99,11 @@ export async function createAndAnalyzeRfqAction(
       status: nextStatus,
       language: extraction.data.language,
       ai_confidence: confidence,
-      extracted_data: extraction.data,
+      // Stores both the raw Claude response and the validated/parsed
+      // extraction (per the spec: "Store: raw response, validated
+      // extraction, confidence if available") — the raw text is kept for
+      // audit/debugging even though the app only ever acts on `validated`.
+      extracted_data: { raw_response: extraction.rawResponse, validated: extraction.data },
     })
     .eq("id", rfqId);
 
