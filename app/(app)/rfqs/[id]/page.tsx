@@ -39,6 +39,9 @@ export default async function RfqDetailPage({ params }: { params: Promise<{ id: 
     products: { id: string; sku: string; name: string; base_sale_price: number } | null;
   })[];
 
+  const extractedData = rfq.extracted_data as { error?: string } | null;
+  const extractionError = extractedData && typeof extractedData === "object" ? (extractedData.error ?? null) : null;
+
   const { data: productsData } = await supabase
     .from("products")
     .select("id, sku, name, brand, base_sale_price")
@@ -71,6 +74,7 @@ export default async function RfqDetailPage({ params }: { params: Promise<{ id: 
         customerId={rfq.customers?.id ?? null}
         items={items}
         products={(productsData ?? []) as { id: string; sku: string; name: string; brand: string | null; base_sale_price: number }[]}
+        extractionError={extractionError}
       />
     </div>
   );

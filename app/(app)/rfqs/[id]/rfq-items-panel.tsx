@@ -14,12 +14,14 @@ export default function RfqItemsPanel({
   customerId,
   items,
   products,
+  extractionError,
 }: {
   rfqId: string;
   rfqStatus: RfqStatus;
   customerId: string | null;
   items: ItemWithProduct[];
   products: ProductOption[];
+  extractionError?: string | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -67,10 +69,17 @@ export default function RfqItemsPanel({
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-gray-500">
-          Aucun article détecté dans ce message (peut-être n&apos;est-ce pas une demande de devis, ou la quantité était
-          totalement absente).
-        </p>
+        extractionError ? (
+          <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <p className="font-semibold">L&apos;extraction IA a échoué — aucune donnée n&apos;a été inventée.</p>
+            <p className="mt-1">{extractionError}</p>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-gray-500">
+            Aucun article détecté dans ce message (peut-être n&apos;est-ce pas une demande de devis, ou la quantité était
+            totalement absente).
+          </p>
+        )
       ) : (
         <div className="mt-3 overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
