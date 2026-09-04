@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireSession } from "@/lib/auth/session";
+import { assertAllItemsMatched } from "@/lib/quotation/guards";
 import type { Customer, CustomerProductPrice, Product, RfqItem } from "@/types/database";
 import GenerateQuotationForm from "./generate-form";
 
@@ -37,8 +38,13 @@ export default async function GenerateQuotationPage({
     .order("created_at");
   const items = (itemsData ?? []) as (RfqItem & { products: Product | null })[];
 
-  const unmatched = items.filter((i) => i.status !== "matched" || !i.matched_product_id || !i.products);
-  if (items.length === 0 || unmatched.length > 0) {
+  // "Ambiguous" (70-89% confidence) items are allowed through deliberately —
+  // only "unmatched" blocks generation (see lib/quotation/guards.ts). An
+  // orphaned reference (product deleted after matching) is caught
+  // separately since the guard only knows about status/matched_product_id.
+  const guard = assertAllItemsMatched(items);
+  const orphaned = items.filter((i) => i.matched_product_id && !i.products);
+  if (items.length === 0 || !guard.ok || orphaned.length > 0) {
     return (
       <div className="max-w-2xl">
         <h1 className="text-xl font-semibold text-gray-900">Génération du devis impossible</h1>

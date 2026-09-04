@@ -40,9 +40,25 @@ export default async function QuotationDetailPage({ params }: { params: Promise<
   const items = (itemsData ?? []) as (QuotationItem & { products: Pick<Product, "sku" | "name"> | null })[];
 
   let rfqRawText: string | null = null;
+  const matchConfidenceByProduct = new Map<string, number>();
   if (quotation.rfq_id) {
     const { data: rfqData } = await supabase.from("rfqs").select("raw_text").eq("id", quotation.rfq_id).maybeSingle();
     rfqRawText = (rfqData as { raw_text: string } | null)?.raw_text ?? null;
+
+    // Surfaces the original match confidence on the quotation review screen
+    // (e.g. "Produit identifié avec une confiance de 76%") — an ambiguous
+    // match (70-89%) is allowed into a quotation but must stay visible so
+    // whoever approves it can double-check it, per the spec's warning list.
+    const { data: rfqItemsData } = await supabase
+      .from("rfq_items")
+      .select("matched_product_id, match_confidence")
+      .eq("rfq_id", quotation.rfq_id)
+      .not("matched_product_id", "is", null);
+    for (const row of (rfqItemsData ?? []) as { matched_product_id: string; match_confidence: number | null }[]) {
+      if (row.match_confidence != null) {
+        matchConfidenceByProduct.set(row.matched_product_id, row.match_confidence);
+      }
+    }
   }
 
   const { data: auditData } = await supabase
@@ -57,6 +73,9 @@ export default async function QuotationDetailPage({ params }: { params: Promise<
     (i) => i.line_margin_percent != null && i.line_margin_percent < session.company.minimum_margin_percent
   );
   const unknownMarginLines = items.filter((i) => i.line_margin_percent == null);
+  const ambiguousMatchLines = items
+    .map((i) => ({ item: i, confidence: matchConfidenceByProduct.get(i.product_id) }))
+    .filter((x): x is { item: (typeof items)[number]; confidence: number } => x.confidence != null && x.confidence < 0.9);
 
   const canApprove = ["admin", "manager"].includes(session.profile.role) && quotation.status === "pending_approval";
 
@@ -134,10 +153,18 @@ export default async function QuotationDetailPage({ params }: { params: Promise<
         <Stat label="Total TTC" value={`${quotation.total.toFixed(2)} ${quotation.currency}`} emphasize />
       </div>
 
-      {(lowMarginLines.length > 0 || unknownMarginLines.length > 0 || quotation.approval_required) && (
+      {(lowMarginLines.length > 0 ||
+        unknownMarginLines.length > 0 ||
+        ambiguousMatchLines.length > 0 ||
+        quotation.approval_required) && (
         <div className="card mt-4 border-amber-200 bg-amber-50 p-4">
           <p className="text-sm font-medium text-amber-800">Avertissements</p>
           <ul className="mt-1 list-inside list-disc text-sm text-amber-700">
+            {ambiguousMatchLines.map(({ item, confidence }) => (
+              <li key={item.id}>
+                Produit identifié avec une confiance de {Math.round(confidence * 100)}% ({item.description}).
+              </li>
+            ))}
             {lowMarginLines.length > 0 && <li>Marge inférieure au seuil autorisé ({session.company.minimum_margin_percent}%) sur au moins un article.</li>}
             {unknownMarginLines.length > 0 && <li>Prix d&apos;achat absent pour au moins un article — marge inconnue.</li>}
             {quotation.approval_required && quotation.status === "pending_approval" && <li>Ce devis nécessite une approbation avant envoi.</li>}

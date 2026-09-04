@@ -6,11 +6,19 @@ export interface QuotationGuardResult {
 }
 
 /**
- * A quotation can only be generated once every line has a confirmed
- * product match. This is deliberately a small, pure, directly-testable
- * function — generateQuotationAction (app/(app)/quotations/actions.ts)
- * calls it as the server-side source of truth, never trusting whatever
- * the client believed was matched.
+ * A quotation can be generated once every line has *some* confirmed
+ * product association — "matched" (>=90% confidence) or "ambiguous"
+ * (70-89%, human confirmation recommended) both qualify, per the spec's
+ * confidence thresholds: only "unmatched" (<70%, or no product at all)
+ * blocks generation outright. An ambiguous item is still allowed through
+ * deliberately — it surfaces as a warning and forces approval
+ * (lib/pricing/margin.ts's evaluateApprovalRequirement) rather than being
+ * silently auto-quoted or blocked entirely.
+ *
+ * This is deliberately a small, pure, directly-testable function —
+ * generateQuotationAction (app/(app)/quotations/actions.ts) calls it as
+ * the server-side source of truth, never trusting whatever the client
+ * believed was matched.
  */
 export function assertAllItemsMatched(
   items: Pick<RfqItem, "status" | "matched_product_id">[]
@@ -19,7 +27,7 @@ export function assertAllItemsMatched(
     return { ok: false, reason: "Aucun article à inclure dans le devis." };
   }
 
-  const unmatched = items.filter((i) => i.status !== "matched" || !i.matched_product_id);
+  const unmatched = items.filter((i) => i.status === "unmatched" || !i.matched_product_id);
   if (unmatched.length > 0) {
     return {
       ok: false,

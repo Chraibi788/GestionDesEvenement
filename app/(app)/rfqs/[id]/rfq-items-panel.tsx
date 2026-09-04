@@ -26,8 +26,12 @@ export default function RfqItemsPanel({
   const [error, setError] = useState<string | null>(null);
 
   const hasUnprocessedItems = items.some((i) => i.status !== "matched" && i.match_confidence == null);
-  const allMatched = items.length > 0 && items.every((i) => i.status === "matched");
-  const hasUnmatched = items.some((i) => i.status === "unmatched");
+  // "Ambiguous" items (70-89% confidence) are allowed into a quotation —
+  // they force approval and show a warning, but only a true "unmatched"
+  // item (or one that lost its product reference) blocks generation. See
+  // lib/quotation/guards.ts, which the server action re-checks regardless.
+  const hasUnmatched = items.some((i) => i.status === "unmatched" || !i.matched_product_id);
+  const canGenerate = items.length > 0 && !hasUnmatched;
 
   function runMatching() {
     setError(null);
@@ -125,9 +129,9 @@ export default function RfqItemsPanel({
       {items.length > 0 && (
         <div className="mt-4 flex items-center gap-3">
           <a
-            href={allMatched ? `/quotations/generate?rfq_id=${rfqId}` : undefined}
-            className={`btn-primary ${!allMatched ? "pointer-events-none opacity-50" : ""}`}
-            aria-disabled={!allMatched}
+            href={canGenerate ? `/quotations/generate?rfq_id=${rfqId}` : undefined}
+            className={`btn-primary ${!canGenerate ? "pointer-events-none opacity-50" : ""}`}
+            aria-disabled={!canGenerate}
           >
             Générer le devis
           </a>
