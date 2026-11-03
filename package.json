@@ -20,7 +20,7 @@
     "@supabase/supabase-js": "2.112.4",
     "@supabase/ssr": "0.12.5",
     "@anthropic-ai/sdk": "0.122.0",
-    "zod": "4.4.3",
+    "zod": "4.6.7",
     "decimal.js": "10.6.0",
     "@react-pdf/renderer": "4.9.0",
     "xlsx": "0.18.5",
